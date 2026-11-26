@@ -1,5 +1,7 @@
 # PR-Sentinel
 
+[![CI](https://github.com/Tune-0-Matic/pr-sentinel/actions/workflows/ci.yml/badge.svg)](https://github.com/Tune-0-Matic/pr-sentinel/actions/workflows/ci.yml)
+
 **PR-Sentinel runs every Python function a pull request changes in both its old and new versions, on hundreds of boundary and negative inputs, and flags any input where the new code crashes, hangs or returns something different.** It shrinks each failing input to the smallest one that still reproduces the failure, points to the line in the diff that caused it, and posts the result as a PR comment, with no API key and no runtime dependencies.
 
 ## Quickstart
@@ -115,7 +117,7 @@ src/worker.py        stdlib-only subprocess that runs old and new code on one in
 src/reporter.py      Markdown PR comment
 examples/            invoice module, the PR that breaks it, and the report it produces
 benchmarks/          10 bug patches, 2 clean refactors, runner and results
-tests/               the project's own pytest suite (30 tests)
+tests/               the project's own pytest suite (30 tests), run in CI on Linux and Windows, Python 3.11 to 3.13
 ```
 
 Developing: `pip install -e ".[dev]"`, then `pytest`. Architecture diagrams are in [ARCHITECTURE.md](ARCHITECTURE.md).
