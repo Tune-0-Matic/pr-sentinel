@@ -1,0 +1,12 @@
+Look coupons up directly
+
+diff --git a/coupons.py b/coupons.py
+--- a/coupons.py
++++ b/coupons.py
+@@ -4,5 +4,5 @@
+ 
+ 
+ def apply_coupon(price: Decimal, code: str) -> Decimal:
+-    rate = COUPONS.get(code.strip().upper(), Decimal("0"))
++    rate = COUPONS.get(code, Decimal("0"))
+     return price - price * rate

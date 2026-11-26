@@ -1,0 +1,11 @@
+Round average order value to cents
+
+diff --git a/metrics.py b/metrics.py
+--- a/metrics.py
++++ b/metrics.py
+@@ -1,4 +1,2 @@
+ def average_order_value(revenue: float, orders: int) -> float:
+-    if orders == 0:
+-        return 0.0
+-    return revenue / orders
++    return round(revenue / orders, 2)

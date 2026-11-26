@@ -1,0 +1,12 @@
+Use sum() for the cart subtotal
+
+diff --git a/cart.py b/cart.py
+--- a/cart.py
++++ b/cart.py
+@@ -1,5 +1,2 @@
+ def subtotal(prices: list) -> float:
+-    total = 0.0
+-    for price in prices:
+-        total += price
+-    return total
++    return sum(prices, 0.0)

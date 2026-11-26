@@ -1,0 +1,13 @@
+Clearer out-of-stock error
+
+diff --git a/inventory.py b/inventory.py
+--- a/inventory.py
++++ b/inventory.py
+@@ -1,5 +1,5 @@
+ def reserve(stock: int, qty: int) -> int:
+     """Reserve qty units and return the stock left."""
+-    if qty <= 0 or qty > stock:
+-        raise ValueError("invalid reservation")
++    if qty > stock:
++        raise ValueError(f"only {stock} left, cannot reserve {qty}")
+     return stock - qty

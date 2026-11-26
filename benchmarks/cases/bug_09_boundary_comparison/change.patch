@@ -1,0 +1,13 @@
+Tidy shipping fee logic
+
+diff --git a/shipping.py b/shipping.py
+--- a/shipping.py
++++ b/shipping.py
+@@ -5,6 +5,4 @@
+ 
+ 
+ def shipping_fee(subtotal: Decimal) -> Decimal:
+-    if subtotal >= FREE_SHIPPING_MIN:
+-        return Decimal("0")
+-    return FLAT_FEE
++    return Decimal("0") if subtotal > FREE_SHIPPING_MIN else FLAT_FEE

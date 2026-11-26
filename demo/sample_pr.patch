@@ -1,0 +1,27 @@
+Cap line discounts at 50% of the line amount
+
+diff --git a/demo/invoice_engine.py b/demo/invoice_engine.py
+--- a/demo/invoice_engine.py
++++ b/demo/invoice_engine.py
+@@ -2,14 +2,19 @@
+ from decimal import ROUND_HALF_UP, Decimal
+ 
+ CENT = Decimal("0.01")
++MAX_DISCOUNT_RATE = Decimal("0.5")  # finance policy: never more than half off a line
+ 
+ 
+ def line_total(unit_price: Decimal, quantity: int, discount: Decimal = Decimal("0")) -> Decimal:
+-    """Price of one invoice line after a flat discount, rounded to the cent."""
++    """Price of one invoice line after a flat discount, rounded to the cent.
++
++    Discounts are capped at MAX_DISCOUNT_RATE of the line's gross amount.
++    """
+     if quantity < 0:
+         raise ValueError("quantity cannot be negative")
+     gross = unit_price * quantity
+-    discount = min(discount, gross)
++    if discount / gross > MAX_DISCOUNT_RATE:
++        discount = gross * MAX_DISCOUNT_RATE
+     return (gross - discount).quantize(CENT, rounding=ROUND_HALF_UP)
+ 
+ 

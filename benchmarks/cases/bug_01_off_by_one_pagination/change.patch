@@ -1,0 +1,12 @@
+Use an explicit end index in paginate()
+
+diff --git a/pagination.py b/pagination.py
+--- a/pagination.py
++++ b/pagination.py
+@@ -3,4 +3,5 @@
+     if page < 1 or per_page < 1:
+         raise ValueError("page and per_page start at 1")
+     start = (page - 1) * per_page
+-    return items[start:start + per_page]
++    end = start + per_page - 1  # last index on the page
++    return items[start:end]

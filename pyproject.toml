@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pr-sentinel"
+version = "0.1.0"
+description = "Differential regression testing for the Python functions a pull request changes."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = ["pytest>=7.4"]
+
+[project.optional-dependencies]
+llm = ["anthropic>=1.0"]
+
+[project.scripts]
+pr-sentinel = "src.cli:main"
+
+[tool.setuptools]
+packages = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

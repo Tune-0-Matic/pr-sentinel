@@ -1,0 +1,32 @@
+name: PR-Sentinel
+description: Run the Python functions a pull request changes, old and new, on the same edge-case inputs.
+inputs:
+  base:
+    description: Ref to compare against.
+    default: origin/${{ github.base_ref }}
+  mode:
+    description: mock (no API key) or llm (needs ANTHROPIC_API_KEY or OPENAI_API_KEY in env).
+    default: mock
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
+    - shell: bash
+      run: pip install "${{ github.action_path }}[llm]"
+    - id: scan
+      shell: bash
+      run: |
+        set +e
+        pr-sentinel scan --base "${{ inputs.base }}" --mode "${{ inputs.mode }}" --output sentinel-report.md
+        echo "code=$?" >> "$GITHUB_OUTPUT"
+        if [ -f sentinel-report.md ]; then cat sentinel-report.md >> "$GITHUB_STEP_SUMMARY"; fi
+    - if: github.event_name == 'pull_request'
+      shell: bash
+      continue-on-error: true  # fork PRs get a read-only token
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: gh pr comment "${{ github.event.pull_request.number }}" --body-file sentinel-report.md --edit-last || gh pr comment "${{ github.event.pull_request.number }}" --body-file sentinel-report.md
+    - shell: bash
+      run: exit ${{ steps.scan.outputs.code }}

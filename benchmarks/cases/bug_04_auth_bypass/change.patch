@@ -1,0 +1,13 @@
+Make editor roles configurable
+
+diff --git a/permissions.py b/permissions.py
+--- a/permissions.py
++++ b/permissions.py
+@@ -1,4 +1,6 @@
+-EDITOR_ROLES = ("admin", "editor")
++import os
++
++EDITOR_ROLES = os.environ.get("EDITOR_ROLES", "admin,editor")
+ 
+ 
+ def can_edit(role: str, user_id: int, owner_id: int) -> bool:

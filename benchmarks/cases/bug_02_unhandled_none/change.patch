@@ -1,0 +1,13 @@
+Normalise whitespace in display names
+
+diff --git a/customers.py b/customers.py
+--- a/customers.py
++++ b/customers.py
+@@ -3,6 +3,4 @@
+ 
+ def display_name(first: str, last: Optional[str] = None) -> str:
+     """Name shown on receipts; last name is optional for guest checkouts."""
+-    if last:
+-        return f"{first} {last}".strip()
+-    return first.strip()
++    return f"{first.strip()} {last.strip()}".strip()

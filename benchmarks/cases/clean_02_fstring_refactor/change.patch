@@ -1,0 +1,9 @@
+Switch invoice labels to f-strings
+
+diff --git a/labels.py b/labels.py
+--- a/labels.py
++++ b/labels.py
+@@ -1,2 +1,2 @@
+ def invoice_label(number: int, prefix: str = "INV") -> str:
+-    return "%s-%06d" % (prefix, number)
++    return f"{prefix}-{number:06d}"
