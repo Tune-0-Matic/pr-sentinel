@@ -1,7 +1,5 @@
 # PR-Sentinel
 
-[![CI](https://github.com/Tune-0-Matic/pr-sentinel/actions/workflows/ci.yml/badge.svg)](https://github.com/Tune-0-Matic/pr-sentinel/actions/workflows/ci.yml)
-
 **PR-Sentinel runs every Python function a pull request changes in both its old and new versions, on hundreds of boundary and negative inputs, and flags any input where the new code crashes, hangs or returns something different.** It shrinks each failing input to the smallest one that still reproduces the failure, points to the line in the diff that caused it, and posts the result as a PR comment, with no API key and no runtime dependencies.
 
 ## Quickstart
@@ -91,7 +89,7 @@ Most regressions get through review because nobody wrote a test for the input th
 - **Per-input timeout:** inputs run in a separate worker process, one at a time. The parent applies a time limit (1.0s by default) separately to the old call and the new call. A hang or a hard crash (a segfault or `os._exit`) kills only that worker. It's recorded as a regression for that input, and a fresh worker carries on with the next one. If a function hangs 3 times it's stopped early, so a broken PR can't keep CI busy.
 - **Protocol hygiene:** the code under test gets a dummy stdin, and its stdout goes to stderr, so printing or calling `input()` can't corrupt the worker protocol.
 - **Fair blame:** if the old version also hangs or crashes on an input, the PR isn't blamed for it.
-- **Workflow hardening:** the workflows use `pull_request`, never `pull_request_target`, so PR code runs without repository secrets and with a read-only token for forks. Permissions default to `contents: read`, and only the reporting job gets `pull-requests: write`. Third-party actions are pinned to commit SHAs, checkout doesn't keep credentials, and Action inputs reach shell steps only through environment variables, which prevents script injection.
+- **Workflow hardening:** trigger on `pull_request`, never `pull_request_target`, as in the snippet above. PR code then runs without repository secrets and with a read-only token for forks; grant only `contents: read`, plus `pull-requests: write` for the comment. Inside the Action, third-party actions are pinned to commit SHAs and inputs reach shell steps only through environment variables, which prevents script injection.
 - **Not a sandbox:** the code under test runs with the runner's own permissions. That's normal for CI on `pull_request`, but don't point this at code you wouldn't run anyway.
 
 ## Benchmarks
@@ -117,7 +115,7 @@ src/worker.py        stdlib-only subprocess that runs old and new code on one in
 src/reporter.py      Markdown PR comment
 examples/            invoice module, the PR that breaks it, and the report it produces
 benchmarks/          10 bug patches, 2 clean refactors, runner and results
-tests/               the project's own pytest suite, run in CI on Linux and Windows, Python 3.11 to 3.13
+tests/               the project's own pytest suite (30 tests)
 ```
 
 Developing: `pip install -e ".[dev]"`, then `pytest`. Architecture diagrams are in [ARCHITECTURE.md](ARCHITECTURE.md).
