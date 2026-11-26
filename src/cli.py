@@ -12,7 +12,7 @@ from .diff_parser import FileContext, PatchError, load_git, load_patch
 ROOT = Path(__file__).resolve().parent.parent
 
 
-def scan(contexts: list[FileContext], repo: Path, mode: str = "mock", timeout: float = 120):
+def scan(contexts: list[FileContext], repo: Path, mode: str = "mock", timeout: float = 1.0):
     cases = evaluator.generate(contexts, mode)
     result = runner.run(contexts, cases, repo, timeout)
     return reporter.render(contexts, result), result
@@ -29,13 +29,13 @@ def main(argv: list[str] | None = None) -> int:
     s.add_argument("--repo", type=Path, default=Path("."), help="repository root (default: .)")
     s.add_argument("--mode", choices=["mock", "llm"], default="mock")
     s.add_argument("--output", type=Path, default=Path("sentinel-report.md"))
-    s.add_argument("--timeout", type=float, default=120, help="seconds before the test process is killed")
-    sub.add_parser("demo", help="run against demo/sample_pr.patch and print the report")
+    s.add_argument("--timeout", type=float, default=1.0, help="per-input limit in seconds (default: 1.0)")
+    sub.add_parser("demo", help="run against examples/sample_pr.patch and print the report")
     args = parser.parse_args(argv)
 
     try:
         if args.command == "demo":
-            report, result = scan(load_patch(ROOT / "demo" / "sample_pr.patch", ROOT), ROOT)
+            report, result = scan(load_patch(ROOT / "examples" / "sample_pr.patch", ROOT), ROOT)
             print(report)
             return 0 if reporter.status(result) == "fail" else 1
         contexts = load_patch(args.diff, args.repo) if args.diff else load_git(args.repo, args.base, args.head)

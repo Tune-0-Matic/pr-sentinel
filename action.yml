@@ -1,32 +1,50 @@
 name: PR-Sentinel
 description: Run the Python functions a pull request changes, old and new, on the same edge-case inputs.
+branding:
+  icon: shield
+  color: red
 inputs:
   base:
     description: Ref to compare against.
     default: origin/${{ github.base_ref }}
   mode:
-    description: mock (no API key) or llm (needs ANTHROPIC_API_KEY or OPENAI_API_KEY in env).
+    description: mock (no API key) or llm (needs ANTHROPIC_API_KEY or OPENAI_API_KEY in the step env).
     default: mock
+  timeout:
+    description: Per-input time limit in seconds.
+    default: "1.0"
 runs:
   using: composite
   steps:
-    - uses: actions/setup-python@v5
+    - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5
       with:
         python-version: "3.11"
+    # Inputs are passed through env, never interpolated into scripts, so they cannot inject shell code.
     - shell: bash
-      run: pip install "${{ github.action_path }}[llm]"
+      env:
+        ACTION_PATH: ${{ github.action_path }}
+        MODE: ${{ inputs.mode }}
+      run: |
+        if [ "$MODE" = llm ]; then pip install "$ACTION_PATH[llm]"; else pip install "$ACTION_PATH"; fi
     - id: scan
       shell: bash
+      env:
+        BASE: ${{ inputs.base }}
+        MODE: ${{ inputs.mode }}
+        TIMEOUT: ${{ inputs.timeout }}
       run: |
         set +e
-        pr-sentinel scan --base "${{ inputs.base }}" --mode "${{ inputs.mode }}" --output sentinel-report.md
+        pr-sentinel scan --base "$BASE" --mode "$MODE" --timeout "$TIMEOUT" --output sentinel-report.md
         echo "code=$?" >> "$GITHUB_OUTPUT"
         if [ -f sentinel-report.md ]; then cat sentinel-report.md >> "$GITHUB_STEP_SUMMARY"; fi
     - if: github.event_name == 'pull_request'
       shell: bash
-      continue-on-error: true  # fork PRs get a read-only token
+      continue-on-error: true  # fork PRs get a read-only token; the job summary still has the report
       env:
         GH_TOKEN: ${{ github.token }}
-      run: gh pr comment "${{ github.event.pull_request.number }}" --body-file sentinel-report.md --edit-last || gh pr comment "${{ github.event.pull_request.number }}" --body-file sentinel-report.md
+        PR: ${{ github.event.pull_request.number }}
+      run: gh pr comment "$PR" --body-file sentinel-report.md --edit-last || gh pr comment "$PR" --body-file sentinel-report.md
     - shell: bash
-      run: exit ${{ steps.scan.outputs.code }}
+      env:
+        CODE: ${{ steps.scan.outputs.code }}
+      run: exit "$CODE"

@@ -5,11 +5,11 @@
 ```mermaid
 flowchart LR
     A["git diff<br/>(merge-base..head)<br/>or .patch file"] --> B["Diff parser<br/>hunks, added/removed lines"]
-    B --> C["AST context<br/>changed functions, callers,<br/>changed module constants"]
-    C --> D["Case synthesis<br/>mock: typed edge values + harvested constants<br/>llm: model-proposed literals"]
-    D --> E["Isolated runner<br/>pytest subprocess, timeout,<br/>old vs new per input"]
-    E --> F["Diagnosis<br/>trace -> changed line,<br/>failure kind, suggested fix"]
-    F --> G["Markdown report<br/>badge, risk, tables, traces"]
+    B --> C["AST context<br/>changed functions, callers,<br/>changed module constants,<br/>literals, len() bounds"]
+    C --> D["Fuzzer<br/>typed boundary + negative inputs<br/>(+ LLM-proposed literals)"]
+    D --> E["Worker pool<br/>old vs new per input,<br/>per-input timeout"]
+    E --> F["Shrinker<br/>delta-debug each distinct failure"]
+    F --> G["Markdown report<br/>badge, risk, reproducers, traces"]
 ```
 
 ## Where the old and new source come from
@@ -45,26 +45,41 @@ flowchart TD
     S -- no --> N["listed under 'Not exercised'"]
 ```
 
-## The differential check
+## Worker protocol and timeouts
 
-For each generated input, the harness calls the old function, then the new one. Both are built from the same argument expressions, but each call gets fresh objects, so if one version mutates its input the other doesn't see it.
+```mermaid
+sequenceDiagram
+    participant P as Parent (runner.py)
+    participant W as Worker (worker.py)
+    P->>W: spawn, with old/new module paths
+    W-->>P: ready (modules imported; import errors kept as results)
+    loop each input
+        P->>W: {file, func, args, kwargs} as JSON line
+        Note over P: wait up to the timeout
+        W-->>P: phase=new (old call finished)
+        Note over P: wait up to the timeout again
+        W-->>P: result: pass / value_change / crash / now_accepts
+    end
+    Note over P,W: on timeout or EOF: kill W, record the result, spawn a fresh worker
+```
 
-| Old | New | Result |
-|---|---|---|
-| returns `a` | returns `b`, `a` equals `b` | pass |
-| returns `a` | returns `b`, different | behaviour change (review) |
-| returns `a` | raises | crash regression (fail) |
-| raises | raises (any type) | pass: both reject the input |
-| raises | returns | now accepts rejected input (review) |
+- Each reply line starts with a marker, so anything the code under test prints is ignored. The code under test gets an empty stdin, and its stdout is redirected to stderr.
+- A timeout or crash during the **old** call means the old code fails on that input too, so it isn't counted against the PR.
+- After 3 timeouts in the new version of a function, its remaining inputs are skipped and the report says so.
+- The worker is stdlib-only and runs as a plain script. The project itself has no runtime dependencies.
 
-Crashes re-raise inside the new module, so pytest's traceback ends on the real line in the changed file. The old result is attached as an exception note, which is why Python 3.11+ is required.
+## Shrinking
 
-## Isolation
+For each distinct failure signature `(file, function, outcome, exception type, line)`, the shrinker evaluates the failing input into Python values. It then tries strictly smaller candidates for each argument in turn:
 
-- The generated suite lives in a fresh temp directory and has its own empty `pytest.ini`, so the target repo's config and conftest files don't apply.
-- `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1` and `-p no:cacheprovider` keep runs reproducible and quick to start.
-- A wall-clock timeout kills the subprocess, which catches infinite loops in the changed code.
-- LLM-proposed inputs go through an `ast` allow-list (literals and `Decimal('...')` only) before they are written into the suite.
+| Value | Candidates |
+|---|---|
+| list / tuple | empty, first half, second half, each element removed (16 items or fewer), each element shrunk |
+| str | empty, halves, each character removed (8 or fewer) |
+| dict | empty, each key removed, each value shrunk |
+| int / float / Decimal | 0, 1, integer part, half, one step towards zero |
+
+A candidate is kept only if it reproduces the same signature, so shrinking can't drift onto a different bug. "Smaller" is measured by a size function, which guarantees termination, and each failure gets at most 200 attempts. Values are turned back into source with `to_src`, which also handles `nan` and `inf`, so the reproducer can be pasted straight into a test.
 
 ## Risk score
 

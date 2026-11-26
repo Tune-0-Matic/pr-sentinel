@@ -1,8 +1,8 @@
 Cap line discounts at 50% of the line amount
 
-diff --git a/demo/invoice_engine.py b/demo/invoice_engine.py
---- a/demo/invoice_engine.py
-+++ b/demo/invoice_engine.py
+diff --git a/examples/invoice_engine.py b/examples/invoice_engine.py
+--- a/examples/invoice_engine.py
++++ b/examples/invoice_engine.py
 @@ -2,14 +2,19 @@
  from decimal import ROUND_HALF_UP, Decimal
  

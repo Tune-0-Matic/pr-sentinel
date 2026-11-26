@@ -54,6 +54,7 @@ class Function:
     params: list[Param]
     numbers: list[str]  # numeric literals the function (or a module constant it reads) uses
     strings: list[str]
+    lengths: list[int]  # integers compared against len(...)
     complexity: int
     old_code: str
     new_code: str
@@ -214,6 +215,16 @@ def _literals(nodes: list[ast.AST]) -> tuple[list[str], list[str]]:
     return list(dict.fromkeys(numbers)), list(dict.fromkeys(strings))
 
 
+def _len_bounds(node: ast.AST) -> list[int]:
+    out = []
+    for cmp in (n for n in ast.walk(node) if isinstance(n, ast.Compare)):
+        sides = [cmp.left, *cmp.comparators]
+        if any(isinstance(s, ast.Call) and isinstance(s.func, ast.Name) and s.func.id == "len" for s in sides):
+            out += [s.value for s in sides if isinstance(s, ast.Constant) and type(s.value) is int
+                    and 0 <= s.value <= 10_000]
+    return list(dict.fromkeys(out))
+
+
 def _params(node: ast.FunctionDef) -> list[Param]:
     a = node.args
     positional = a.posonlyargs + a.args
@@ -279,6 +290,7 @@ def analyze(diff: FileDiff, old_source: str, new_source: str) -> FileContext:
                 name=name, reason=reason, start=start, end=end,
                 changed_lines=code_changes,
                 params=_params(node), numbers=numbers, strings=strings,
+                lengths=list(dict.fromkeys(_len_bounds(old_node) + _len_bounds(node))),
                 complexity=1 + sum(isinstance(n, BRANCH_NODES) for n in ast.walk(node)),
                 old_code=ast.get_source_segment(old_source, old_node) or "",
                 new_code=ast.get_source_segment(new_source, node) or "",
