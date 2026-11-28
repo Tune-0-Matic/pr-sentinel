@@ -1,4 +1,4 @@
-name: PR-Sentinel
+name: Tune-O-Matic PR-Sentinel
 description: Run the Python functions a pull request changes, old and new, on the same edge-case inputs.
 branding:
   icon: shield
