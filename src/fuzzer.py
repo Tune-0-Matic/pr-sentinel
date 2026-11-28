@@ -101,8 +101,6 @@ def mock_cases(file_index: int, fn: Function) -> list[Case]:
     return cases
 
 
-# ---- shrinking --------------------------------------------------------------
-
 def evaluate(src: str):
     return eval(src, dict(EVAL_NAMES))  # only our own expressions or ones that passed evaluator.safe_expr
 

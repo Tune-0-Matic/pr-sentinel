@@ -41,8 +41,6 @@ def scan_change(tmp_path: Path, before: str, after: str, **kw):
     return cli.scan(load_patch(tmp_path / "p.patch", tmp_path), tmp_path, **kw)
 
 
-# ---- diff parsing and AST context -------------------------------------------
-
 def test_parse_and_apply_roundtrip():
     [fd] = parse_diff(make_patch(BEFORE, AFTER))
     assert fd.path == "mod.py"
@@ -69,8 +67,6 @@ def test_new_and_non_python_files_are_skipped():
     [txt] = parse_diff(make_patch("a\n", "b\n", "notes.txt"))
     assert analyze(txt, "a\n", "b\n").skipped == ["`notes.txt`: not a Python file"]
 
-
-# ---- AST constant extraction and input generation ---------------------------
 
 def test_constants_from_body_module_and_len_comparisons():
     before = 'MAX = Decimal("50")\n\n\ndef f(items: list, code: str, n: int) -> int:\n    return len(items)\n'
@@ -107,8 +103,6 @@ def test_safe_expr(expr, ok):
     assert evaluator.safe_expr(expr) is ok
 
 
-# ---- shrinking ----------------------------------------------------------------
-
 def test_shrink_500_item_list_to_single_element():
     assert fuzzer.shrink([list(range(500))], lambda v: 0 in v[0]) == [[0]]
 
@@ -132,8 +126,6 @@ def test_to_src_round_trips_special_values():
         back = fuzzer.evaluate(fuzzer.to_src(v))
         assert repr(back) == repr(v)
 
-
-# ---- isolated worker ------------------------------------------------------------
 
 HANG_BEFORE = "def f(x: int) -> int:\n    return x\n"
 HANG_AFTER = '''\
@@ -181,8 +173,6 @@ def test_crash_reports_minimized_input_and_line(tmp_path):
     assert "**Minimal reproducer:** `mean([])`" in report
     assert "Guard the denominator" in report and "`mod.py:3` (changed in this PR)" in report
 
-
-# ---- end to end and reporting ------------------------------------------------------
 
 def test_demo_catches_zero_dollar_regression():
     report, result = cli.scan(load_patch(ROOT / "examples" / "sample_pr.patch", ROOT), ROOT)

@@ -272,7 +272,6 @@ def analyze(diff: FileDiff, old_source: str, new_source: str) -> FileContext:
         elif name not in old_defs:
             ctx.skipped.append(f"`{name}`: new function, no previous version to compare against")
         elif "." in name:
-            # shortcut: methods need an instance to call; add constructor synthesis if class-heavy code matters
             ctx.skipped.append(f"`{name}`: method ({reason}); only module-level functions are exercised")
         elif isinstance(new_defs[name], ast.AsyncFunctionDef):
             ctx.skipped.append(f"`{name}`: async function ({reason}); not exercised")
